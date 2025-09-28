@@ -1,4 +1,3 @@
-// Archivo: controllers/oficiosController.js (Corregido)
 const path = require('path');
 const crypto = require('crypto');
 const db = require('../config/db');
@@ -24,12 +23,6 @@ const crearOficio = async (req, res) => {
             folio 
         };
 
-        // --- ¡CORRECCIÓN IMPORTANTE AQUÍ! ---
-        // Antes usábamos 'INSERT INTO oficios SET ?', que es una sintaxis corta
-        // que no es compatible con el método `execute` de mysql2.
-
-        // Ahora, construimos la consulta SQL completa y pasamos los valores en un array,
-        // que es la forma correcta y segura.
         const query = 'INSERT INTO oficios (consecutivo, destinatario, departamento, asunto, fecha, folio) VALUES (?, ?, ?, ?, ?, ?)';
         const values = [
             nuevoOficio.consecutivo, 
@@ -40,11 +33,14 @@ const crearOficio = async (req, res) => {
             nuevoOficio.folio
         ];
 
-        await db.execute(query, values);
+        
+        // Guardamos el resultado de la consulta en la variable 'result'.
+        const [result] = await db.execute(query, values);
 
-        res.redirect('/');
+        // Redirigimos a la ruta para ver el oficio, usando el ID del registro que se inserto.
+        res.redirect(`/oficio/${result.insertId}`);
+
     } catch (error) {
-        // Este console.error es el que nos ayudó a encontrar el problema.
         console.error('Error al guardar el oficio:', error);
         res.status(500).send("Error interno al guardar el oficio.");
     }
@@ -58,7 +54,7 @@ const verOficio = async (req, res) => {
         if (results.length === 0) {
             return res.status(404).send('Oficio no encontrado');
         }
-        res.render('oficio', { 
+        res.render('verOficio', { 
             oficio: results[0],
             usuario: req.session.usuario 
         });
