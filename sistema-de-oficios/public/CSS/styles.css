@@ -1,0 +1,32 @@
+/* Estilos generales */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Contenedor principal personalizado */
+.form-container {
+    margin-top: 80px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Tamaños específicos para los formularios */
+.form-container-sm {
+    max-width: 400px;
+}
+
+.form-container-md {
+    max-width: 600px;
+    margin-top: 50px;
+}
+
+/* Estilos específicos para la página de login */
+.login-form .form-label {
+    font-weight: bold;
+}
+
+.login-form .alert {
+    display: none;
+}
