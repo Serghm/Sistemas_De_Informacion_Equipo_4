@@ -1,4 +1,3 @@
-// Archivo: routes/authRoutes.js (Versión Final)
 const express = require('express');
 const router = express.Router();
 const { 
@@ -10,14 +9,14 @@ const {
     renderUsersPanel
 } = require('../controllers/authController');
 const { protegerAdmin } = require('../middleware/authMiddleware');
-const noCache = require('../middleware/cacheMiddleware'); // <-- 1. Importa el anti-caché
+const noCache = require('../middleware/cacheMiddleware'); // esto importa el anticache
 
-// Rutas públicas (no necesitan anti-caché)
+// Rutas públicas "no necesitan anti-cache"
 router.get('/login', renderLoginPage);
 router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 
-// Rutas de administrador (protegidas y con anti-caché)
+// Rutas de administrador "protegidas y con anti-cache"
 router.get('/usuarios', noCache, protegerAdmin, renderUsersPanel);
 router.get('/register', noCache, protegerAdmin, renderRegisterPage);
 router.post('/register', noCache, protegerAdmin, registerUser);

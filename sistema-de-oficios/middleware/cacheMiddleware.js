@@ -1,8 +1,6 @@
-// Archivo: middleware/cacheMiddleware.js
-
 /**
- * Este middleware añade encabezados a la respuesta para decirle al navegador
- * que no guarde esta página en la caché.
+ * Este middleware añade encabezados  para decirle al navegador
+ * que no guarde esta página en la caché, y nos direccione siempre al login 
  */
 function noCache(req, res, next) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');

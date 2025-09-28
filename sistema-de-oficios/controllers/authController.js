@@ -3,18 +3,18 @@ const bcrypt = require('bcrypt');
 const db = require('../config/db');
 
 /**
- * Muestra el panel de administración de usuarios.
+ * Muestra el panel de administracion de usuarios.
  * Obtiene todos los usuarios de la base de datos y los muestra.
  */
 const renderUsersPanel = async (req, res) => {
     try {
-        // Hacemos una consulta a la BD para obtener los datos básicos de los usuarios
+        // Hacemos una consulta a la BD para obtener los datos basicos de los usuarios
         const [usuarios] = await db.execute('SELECT id, nombre_usuario, nombre_completo, rol FROM usuarios ORDER BY id');
         
-        // Renderizamos la nueva vista 'usuarios.ejs' y le pasamos los datos
+        // Renderizamos 'usuarios.ejs' y le pasamos los datos
         res.render('usuarios', { 
             usuarios: usuarios,
-            usuario: req.session.usuario // Pasamos la información del usuario logueado para el header
+            usuario: req.session.usuario // Pasamos la informacion del usuario logueado para el header
         });
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -27,7 +27,7 @@ const renderLoginPage = (req, res) => {
 };
 
 const renderRegisterPage = (req, res) => {
-    // Recuerda que el nombre de tu archivo es 'registrer.html'
+    // Recuerda nombre del archivo es 'registrer.html'
     res.sendFile(path.join(__dirname, '..', 'public', 'registrer.html'));
 };
 
@@ -63,7 +63,7 @@ const registerUser = async (req, res) => {
         const query = 'INSERT INTO usuarios (nombre_usuario, contrasena, nombre_completo, rol) VALUES (?, ?, ?, ?)';
         await db.execute(query, [nombre_usuario, hashedPassword, nombre_completo, rolValido]);
         
-        // Después de registrar, lo ideal es redirigir al panel de usuarios
+        // Despues de registrar, redirigir al panel de usuarios
         res.redirect('/usuarios');
 
     } catch (error) {
@@ -81,7 +81,7 @@ const logoutUser = (req, res) => {
     });
 };
 
-// Se añade la nueva función a la lista de lo que exporta el archivo
+//  añadimos la nueva funcion en la lista de lo que exporta el archivo
 module.exports = { 
     renderLoginPage, 
     renderRegisterPage, 
