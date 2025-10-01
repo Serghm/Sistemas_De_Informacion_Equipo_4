@@ -4,6 +4,7 @@ const protegerRuta = (req, res, next) => {
         next();
     } else {
         console.log('Middleware protegerRuta: No hay sesión. Redirigiendo a /login');
+        res.redirect('/login');
     }
 };
 
