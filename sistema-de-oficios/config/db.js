@@ -1,11 +1,12 @@
 const mysql = require('mysql2/promise');
-// require('dotenv').config(); // <-- Comentado o eliminado
+require('dotenv').config(); 
+
 
 const pool = mysql.createPool({
-    host: 'localhost',                // <-- Valor directo
-    user: 'oficios_user3',           // <-- Valor directo
-    password: '050880Susana',         // <-- Valor directo
-    database: 'oficios_db',           // <-- Valor directo
+    host: process.env.DB_HOST,         
+    user: process.env.DB_USER,         
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME,     
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0

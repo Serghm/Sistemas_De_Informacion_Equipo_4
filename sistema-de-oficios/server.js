@@ -1,7 +1,7 @@
-// Archivo: server.js
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+require('dotenv').config(); 
 const db = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const oficiosRoutes = require('./routes/oficiosRoutes');
@@ -15,7 +15,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Configuración de sesiones
 app.use(session({
-    secret: 'una-frase-secreta-larga-y-dificil-de-adivinar',
+    secret: process.env.SESSION_SECRET, 
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false, httpOnly: true }
@@ -47,7 +47,7 @@ app.get('/', (req, res) => {
     }
 });
 
-// Inicializar servidor
+// Inicializa servidor
 app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
 });

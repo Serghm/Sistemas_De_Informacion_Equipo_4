@@ -1,12 +1,7 @@
-// Archivo: controllers/oficiosController.js
-
 const path = require('path');
 const crypto = require('crypto');
 const db = require('../config/db');
 
-/**
- * Renderiza el formulario principal de oficios
- */
 const renderOficiosForm = (req, res) => {
     try {
         // Verifica que haya sesión activa
@@ -59,7 +54,7 @@ const verOficio = async (req, res) => {
     const idOficio = req.params.id;
     try {
         const query = `
-            SELECT consecutivo, destinatario, departamento, asunto, fecha, folio
+            SELECT id, consecutivo, destinatario, departamento, asunto, fecha, folio
             FROM oficios WHERE id = ?
         `;
         const [results] = await db.execute(query, [idOficio]);
@@ -79,4 +74,31 @@ const verOficio = async (req, res) => {
     }
 };
 
-module.exports = { renderOficiosForm, crearOficio, verOficio };
+// Muestra el panel de administracion con TODOS los oficios.
+ 
+const renderAdminOficios = async (req, res) => {
+    try {
+        // consulta a la BD para obtener los datos basicos de los oficios
+        const [oficios] = await db.execute(
+            'SELECT id, consecutivo, destinatario, asunto, fecha FROM oficios ORDER BY consecutivo DESC'
+        );
+        
+        // Renderizamos la nueva vista 'adminOficios.ejs' 
+        res.render('adminOficios', { 
+            oficios: oficios,
+            usuario: req.session.usuario // Para el header
+        });
+    } catch (error) {
+        console.error('Error al obtener la lista de oficios:', error);
+        res.status(500).send('Error al cargar el panel de oficios.');
+    }
+};
+
+
+// Exportamos la nueva función junto con las existentes
+module.exports = { 
+    renderOficiosForm, 
+    crearOficio, 
+    verOficio,
+    renderAdminOficios 
+};
