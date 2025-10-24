@@ -27,8 +27,11 @@
                             <td><%= new Date(oficio.fecha).toLocaleDateString('es-MX', { timeZone: 'UTC' }) %></td>
                             <td><%= oficio.destinatario %></td>
                             <td><%= oficio.asunto.substring(0, 50) %>...</td>
+                            
                             <td>
                                 <a href="/oficio/<%= oficio.id %>" class="btn btn-sm btn-info">Ver Detalle</a>
+                                
+                                <a href="/oficio/editar/<%= oficio.id %>" class="btn btn-sm btn-warning ms-2">Editar</a>
                             </td>
                         </tr>
                     <% }); %>
