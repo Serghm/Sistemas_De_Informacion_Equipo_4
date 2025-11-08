@@ -2,7 +2,8 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('../config/db');
 
-//Renderiza el formulario principal de oficios
+
+ // Renderiza el formulario principal de oficios
  
 const renderOficiosForm = (req, res) => {
     try {
@@ -18,7 +19,7 @@ const renderOficiosForm = (req, res) => {
     }
 };
 
-//Crear un nuevo oficio en la base de datos
+// Crear un nuevo oficio en la base de datos
  
 const crearOficio = async (req, res) => {
     const { destinatario, departamento, asunto, fecha } = req.body;
@@ -44,8 +45,9 @@ const crearOficio = async (req, res) => {
 };
 
 
-// Ver un oficio específico por ID
 
+ // Ver un oficio específico por ID
+ 
 const verOficio = async (req, res) => {
     const idOficio = req.params.id;
     try {
@@ -71,18 +73,58 @@ const verOficio = async (req, res) => {
 };
 
 
- //Muestra el panel de administracion con TODOS los oficios.
 
+ //Muestra el panel de administracion con TODOS los oficios // AHORA INCLUYE LÓGICA DE BÚSQUEDA.
+ 
 const renderAdminOficios = async (req, res) => {
     try {
-        const [oficios] = await db.execute(
-            'SELECT id, consecutivo, destinatario, asunto, fecha FROM oficios ORDER BY consecutivo DESC'
-        );
+        // Obtenemos el término de búsqueda desde la URL
+        const busqueda = req.query.busqueda || "";
+
+        let query;
+        let params = []; 
+
+        // Verificamos si el usuario está buscando algo
+        if (busqueda.trim() !== '') {
+            // SÍ HAY BÚSQUEDA: Preparamos el término para SQL LIKE
+            const terminoLike = `%${busqueda.trim()}%`;
+            
+            //  Creamos la consulta SQL con WHERE y OR
+              query = `
+                SELECT id, consecutivo, destinatario, asunto, fecha 
+                FROM oficios 
+                WHERE 
+                    consecutivo LIKE ? OR 
+                    destinatario LIKE ? OR 
+                    asunto LIKE ? OR 
+                    departamento LIKE ? OR 
+                    folio LIKE ?
+                ORDER BY consecutivo DESC
+            `;
+            
+            // Añadimos los parámetros (5 veces, una para cada '?')
+            params = [terminoLike, terminoLike, terminoLike, terminoLike, terminoLike];
         
+        } else {
+            // no hay busqueda: Usamos la consulta original
+            query = `
+                SELECT id, consecutivo, destinatario, asunto, fecha 
+                FROM oficios 
+                ORDER BY consecutivo DESC
+            `;
+        }
+
+        // Ejecutamos la consulta
+        const [oficios] = await db.execute(query, params);
+        
+        // Renderizamos la vista
         res.render('adminOficios', { 
             oficios: oficios,
-            usuario: req.session.usuario 
+            usuario: req.session.usuario,
+            // Pasamos el término de búsqueda a la vista
+            busqueda: busqueda 
         });
+
     } catch (error) {
         console.error('Error al obtener la lista de oficios:', error);
         res.status(500).send('Error al cargar el panel de oficios.');
@@ -91,12 +133,13 @@ const renderAdminOficios = async (req, res) => {
 
 
 
- // Muestra el formulario para editar un oficio (Responde a GET /oficio/editar/:id)
 
+ // Muestra el formulario para editar un oficio 
+ 
 const renderEditarOficioForm = async (req, res) => {
     const idOficio = req.params.id;
     try {
-        // 1. Buscar el oficio por su ID
+        // Buscar el oficio por su ID
         const query = `
             SELECT id, consecutivo, destinatario, departamento, asunto, fecha, folio
             FROM oficios WHERE id = ?
@@ -110,10 +153,9 @@ const renderEditarOficioForm = async (req, res) => {
         const oficio = results[0];
 
         // Formatear la fecha para el input type="date"
-        
         const fechaDB = new Date(oficio.fecha);
         const year = fechaDB.getUTCFullYear();
-        const month = String(fechaDB.getUTCMonth() + 1).padStart(2, '0'); // getMonth() es 0-indexado
+        const month = String(fechaDB.getUTCMonth() + 1).padStart(2, '0'); 
         const day = String(fechaDB.getUTCDate()).padStart(2, '0');
         oficio.fecha_formato = `${year}-${month}-${day}`;
 
@@ -131,9 +173,10 @@ const renderEditarOficioForm = async (req, res) => {
 };
 
 
- //Actualiza el oficio en la base de datos(Responde a POST /oficio/editar/:id)
+
+ // Actualiza el oficio en la base de datos 
  
-    const actualizarOficio = async (req, res) => {
+const actualizarOficio = async (req, res) => {
     const idOficio = req.params.id;
     // Obtenemos los datos del formulario
     const { destinatario, departamento, asunto, fecha } = req.body;
