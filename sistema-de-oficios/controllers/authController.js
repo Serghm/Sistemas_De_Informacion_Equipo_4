@@ -4,18 +4,16 @@ const db = require('../config/db');
 const crypto = require('crypto'); 
 
 
-//Muestra el panel de administracion de usuarios.(Obtiene todos los usuarios de la base de datos y los muestra.)
+
  
 const renderUsersPanel = async (req, res) => {
     try {
-        //consulta a la BD para obtener los datos basicos de los usuarios
-        const [usuarios] = await db.execute('SELECT id, nombre_usuario, nombre_completo, rol FROM usuarios ORDER BY id');
         
-        // Renderizamos 'usuarios.ejs' 
+        const result = await db.query('SELECT id, nombre_usuario, nombre_completo, rol FROM usuarios ORDER BY id');
+        
         res.render('usuarios', { 
-            usuarios: usuarios,
-            usuario: req.session.usuario, // Pasamos la informacion del usuario logueado para el header/nav
-            // tempPasswordInfo: undefined // Aseguramos que no haya mensaje de contraseña
+            usuarios: result.rows, 
+            usuario: req.session.usuario, 
         });
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -34,12 +32,15 @@ const renderRegisterPage = (req, res) => {
 const loginUser = async (req, res) => {
     const { nombre_usuario, contrasena } = req.body;
     try {
-        const [rows] = await db.execute('SELECT * FROM usuarios WHERE nombre_usuario = ?', [nombre_usuario]);
-        if (rows.length === 0) {
+        
+        const result = await db.query('SELECT * FROM usuarios WHERE nombre_usuario = $1', [nombre_usuario]);
+        
+       
+        if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
 
-        const usuario = rows[0];
+        const usuario = result.rows[0];
         const passwordMatch = await bcrypt.compare(contrasena, usuario.contrasena);
         if (!passwordMatch) {
             return res.status(401).json({ message: 'Contraseña incorrecta.' });
@@ -60,10 +61,12 @@ const registerUser = async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(contrasena, 10);
         const rolValido = rol === 'admin' ? 'admin' : 'usuario';
-        const query = 'INSERT INTO usuarios (nombre_usuario, contrasena, nombre_completo, rol) VALUES (?, ?, ?, ?)';
-        await db.execute(query, [nombre_usuario, hashedPassword, nombre_completo, rolValido]);
         
-        // Despues de registrar, redirigir al panel de usuarios
+        
+        const query = 'INSERT INTO usuarios (nombre_usuario, contrasena, nombre_completo, rol) VALUES ($1, $2, $3, $4)';
+        await db.query(query, [nombre_usuario, hashedPassword, nombre_completo, rolValido]);
+        
+        
         res.redirect('/usuarios');
 
     } catch (error) {
@@ -82,41 +85,42 @@ const logoutUser = (req, res) => {
 };
 
 
-//Restablece la contraseña de un usuario (Admin). (Responde a POST /admin/reset-password/:id)
+
 
 const resetPasswordAdmin = async (req, res) => {
     const adminId = req.session.usuario.id;
     const userIdToReset = req.params.id;
 
     try {
-        //Verificación de seguridad: Admin no puede resetear su propia cuenta
+        
         if (Number(adminId) === Number(userIdToReset)) {
             console.warn(`Admin (ID: ${adminId}) intentó auto-restablecer su contraseña.`);
-            // recargamos el panel
+            
             return res.redirect('/usuarios');
         }
 
-        //Generar contraseña temporal (ej. 8f1-a4c-2b9)
+        
         const tempPassword = crypto.randomBytes(4).toString('hex').match(/.{1,3}/g).join('-');
 
-        //Hashear la contraseña temporal
+        
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-        //Actualizar la contraseña en la BD y obtener el nombre de usuario
-        const [userRows] = await db.execute('SELECT nombre_usuario FROM usuarios WHERE id = ?', [userIdToReset]);
-        if (userRows.length === 0) {
+       
+        const userResult = await db.query('SELECT nombre_usuario FROM usuarios WHERE id = $1', [userIdToReset]);
+        if (userResult.rows.length === 0) {
             return res.status(404).send('Usuario a restablecer no encontrado.');
         }
-        const userName = userRows[0].nombre_usuario;
+        const userName = userResult.rows[0].nombre_usuario;
 
-        await db.execute('UPDATE usuarios SET contrasena = ? WHERE id = ?', [hashedPassword, userIdToReset]);
+        
+        await db.query('UPDATE usuarios SET contrasena = $1 WHERE id = $2', [hashedPassword, userIdToReset]);
 
-        // Volver a cargar la lista de usuarios para mostrar el panel actualizado
-        const [usuarios] = await db.execute('SELECT id, nombre_usuario, nombre_completo, rol FROM usuarios ORDER BY id');
+      
+        const usuariosResult = await db.query('SELECT id, nombre_usuario, nombre_completo, rol FROM usuarios ORDER BY id');
 
-        // Renderizar el panel con el mensaje de éxito
+        
         res.render('usuarios', {
-            usuarios: usuarios,
+            usuarios: usuariosResult.rows, 
             usuario: req.session.usuario,
             tempPasswordInfo: {
                 pass: tempPassword,

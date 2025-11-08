@@ -10,7 +10,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    // ...todas tus dependencias...
+    "bcrypt": "^6.0.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.3",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "path": "^0.12.7",
+    "pg": "^8.11.5"
   },
   "description": ""
 }

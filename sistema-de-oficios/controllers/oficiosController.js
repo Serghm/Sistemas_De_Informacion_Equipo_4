@@ -2,8 +2,6 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('../config/db');
 
-
- // Renderiza el formulario principal de oficios
  
 const renderOficiosForm = (req, res) => {
     try {
@@ -19,24 +17,29 @@ const renderOficiosForm = (req, res) => {
     }
 };
 
-// Crear un nuevo oficio en la base de datos
+//Crear un nuevo oficio en la base de datos
  
 const crearOficio = async (req, res) => {
     const { destinatario, departamento, asunto, fecha } = req.body;
     try {
-        const [rows] = await db.execute('SELECT MAX(consecutivo) as max_consecutivo FROM oficios');
-        const nuevoConsecutivo = (rows[0].max_consecutivo || 0) + 1;
+        // PG: La consulta MAX es igual
+        const resultMax = await db.query('SELECT MAX(consecutivo) as max_consecutivo FROM oficios');
+        const nuevoConsecutivo = (resultMax.rows[0].max_consecutivo || 0) + 1;
+        
         const datosParaHash = `${nuevoConsecutivo}${destinatario}${fecha}${Date.now()}`;
         const folio = crypto.createHash('sha256').update(datosParaHash).digest('hex');
 
         const query = `
             INSERT INTO oficios (consecutivo, destinatario, departamento, asunto, fecha, folio)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `;
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+        `; 
+        
         const values = [nuevoConsecutivo, destinatario, departamento, asunto, fecha, folio];
 
-        const [result] = await db.execute(query, values);
-        return res.redirect(`/oficio/${result.insertId}`);
+        
+        const result = await db.query(query, values);
+        return res.redirect(`/oficio/${result.rows[0].id}`); 
 
     } catch (error) {
         console.error('Error al guardar el oficio:', error);
@@ -45,24 +48,24 @@ const crearOficio = async (req, res) => {
 };
 
 
+// Ver un oficio específico por ID
 
- // Ver un oficio específico por ID
- 
 const verOficio = async (req, res) => {
     const idOficio = req.params.id;
     try {
         const query = `
             SELECT id, consecutivo, destinatario, departamento, asunto, fecha, folio
-            FROM oficios WHERE id = ?
-        `;
-        const [results] = await db.execute(query, [idOficio]);
+            FROM oficios WHERE id = $1
+        `; 
+        
+        const result = await db.query(query, [idOficio]);
 
-        if (!results || results.length === 0) {
+        if (!result.rows || result.rows.length === 0) {
             return res.status(404).send('Oficio no encontrado');
         }
 
         return res.render('verOficio', { 
-            oficio: results[0],
+            oficio: result.rows[0], 
             usuario: req.session.usuario
         });
 
@@ -73,40 +76,33 @@ const verOficio = async (req, res) => {
 };
 
 
+ //Muestra el panel de administracion con TODOS los oficios.
 
- //Muestra el panel de administracion con TODOS los oficios // AHORA INCLUYE LÓGICA DE BÚSQUEDA.
- 
 const renderAdminOficios = async (req, res) => {
     try {
-        // Obtenemos el término de búsqueda desde la URL
         const busqueda = req.query.busqueda || "";
 
         let query;
         let params = []; 
 
-        // Verificamos si el usuario está buscando algo
         if (busqueda.trim() !== '') {
-            // SÍ HAY BÚSQUEDA: Preparamos el término para SQL LIKE
             const terminoLike = `%${busqueda.trim()}%`;
             
-            //  Creamos la consulta SQL con WHERE y OR
-              query = `
+            query = `
                 SELECT id, consecutivo, destinatario, asunto, fecha 
                 FROM oficios 
                 WHERE 
-                    consecutivo LIKE ? OR 
-                    destinatario LIKE ? OR 
-                    asunto LIKE ? OR 
-                    departamento LIKE ? OR 
-                    folio LIKE ?
+                    CAST(consecutivo AS TEXT) ILIKE $1 OR 
+                    destinatario ILIKE $2 OR 
+                    asunto ILIKE $3 OR 
+                    departamento ILIKE $4 OR 
+                    folio ILIKE $5
                 ORDER BY consecutivo DESC
             `;
             
-            // Añadimos los parámetros (5 veces, una para cada '?')
             params = [terminoLike, terminoLike, terminoLike, terminoLike, terminoLike];
         
         } else {
-            // no hay busqueda: Usamos la consulta original
             query = `
                 SELECT id, consecutivo, destinatario, asunto, fecha 
                 FROM oficios 
@@ -114,14 +110,11 @@ const renderAdminOficios = async (req, res) => {
             `;
         }
 
-        // Ejecutamos la consulta
-        const [oficios] = await db.execute(query, params);
+        const result = await db.query(query, params);
         
-        // Renderizamos la vista
         res.render('adminOficios', { 
-            oficios: oficios,
+            oficios: result.rows, // PG: .rows
             usuario: req.session.usuario,
-            // Pasamos el término de búsqueda a la vista
             busqueda: busqueda 
         });
 
@@ -133,26 +126,24 @@ const renderAdminOficios = async (req, res) => {
 
 
 
+ // Muestra el formulario para editar un oficio (Responde a GET /oficio/editar/:id)
 
- // Muestra el formulario para editar un oficio 
- 
 const renderEditarOficioForm = async (req, res) => {
     const idOficio = req.params.id;
     try {
-        // Buscar el oficio por su ID
         const query = `
             SELECT id, consecutivo, destinatario, departamento, asunto, fecha, folio
-            FROM oficios WHERE id = ?
-        `;
-        const [results] = await db.execute(query, [idOficio]);
+            FROM oficios WHERE id = $1
+        `; 
+        
+        const result = await db.query(query, [idOficio]);
 
-        if (!results || results.length === 0) {
+        if (!result.rows || result.rows.length === 0) {
             return res.status(404).send('Oficio no encontrado');
         }
 
-        const oficio = results[0];
-
-        // Formatear la fecha para el input type="date"
+        const oficio = result.rows[0];
+        
         const fechaDB = new Date(oficio.fecha);
         const year = fechaDB.getUTCFullYear();
         const month = String(fechaDB.getUTCMonth() + 1).padStart(2, '0'); 
@@ -160,7 +151,6 @@ const renderEditarOficioForm = async (req, res) => {
         oficio.fecha_formato = `${year}-${month}-${day}`;
 
 
-        // Renderizar la nueva vista 'editarOficio.ejs'
         return res.render('editarOficio', { 
             oficio: oficio,
             usuario: req.session.usuario
@@ -173,26 +163,22 @@ const renderEditarOficioForm = async (req, res) => {
 };
 
 
-
- // Actualiza el oficio en la base de datos 
+ //Actualiza el oficio en la base de datos(Responde a POST /oficio/editar/:id)
  
-const actualizarOficio = async (req, res) => {
+    const actualizarOficio = async (req, res) => {
     const idOficio = req.params.id;
-    // Obtenemos los datos del formulario
     const { destinatario, departamento, asunto, fecha } = req.body;
 
     try {
-        // Ejecutar la consulta UPDATE
         const query = `
             UPDATE oficios
-            SET destinatario = ?, departamento = ?, asunto = ?, fecha = ?
-            WHERE id = ?
-        `;
+            SET destinatario = $1, departamento = $2, asunto = $3, fecha = $4
+            WHERE id = $5
+        `; 
         const values = [destinatario, departamento, asunto, fecha, idOficio];
 
-        await db.execute(query, values);
+        await db.query(query, values);
 
-        // Redirigir al panel de administrador
         return res.redirect('/admin/oficios');
 
     } catch (error) {
