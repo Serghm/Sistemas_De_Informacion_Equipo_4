@@ -7,7 +7,9 @@ const authRoutes = require('./routes/authRoutes');
 const oficiosRoutes = require('./routes/oficiosRoutes');
 
 const app = express();
-const port = 4000;
+
+
+const port = process.env.PORT || 4000;
 
 // Configuración de EJS
 app.set('view engine', 'ejs');
@@ -49,5 +51,5 @@ app.get('/', (req, res) => {
 
 // Inicializa servidor
 app.listen(port, () => {
-    console.log(`Servidor corriendo en http://localhost:${port}`);
+    console.log(`Servidor corriendo en el puerto ${port}`);
 });
