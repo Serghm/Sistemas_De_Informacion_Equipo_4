@@ -18,10 +18,10 @@ router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 
 
-router.get('/register', renderRegisterPage);
-router.post('/register', registerUser);
-
 router.get('/usuarios', noCache, protegerAdmin, renderUsersPanel);
+router.get('/register', noCache, protegerAdmin, renderRegisterPage);
+router.post('/register', noCache, protegerAdmin, registerUser);
+
 // Ruta para que el admin restablezca la contraseña de un usuario
 router.post('/admin/reset-password/:id', noCache, protegerAdmin, resetPasswordAdmin);
 
