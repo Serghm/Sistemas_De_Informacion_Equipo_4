@@ -17,11 +17,11 @@ router.get('/login', renderLoginPage);
 router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 
-// Rutas de administrador "protegidas y con anti-cache"
-router.get('/usuarios', noCache, protegerAdmin, renderUsersPanel);
-router.get('/register', noCache, protegerAdmin, renderRegisterPage);
-router.post('/register', noCache, protegerAdmin, registerUser);
 
+router.get('/register', renderRegisterPage);
+router.post('/register', registerUser);
+
+router.get('/usuarios', noCache, protegerAdmin, renderUsersPanel);
 // Ruta para que el admin restablezca la contraseña de un usuario
 router.post('/admin/reset-password/:id', noCache, protegerAdmin, resetPasswordAdmin);
 
